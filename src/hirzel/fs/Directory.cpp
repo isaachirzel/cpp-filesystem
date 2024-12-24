@@ -6,7 +6,7 @@
 
 namespace hirzel::fs
 {
-	extern ErrorCallback _errorCallback;
+	extern ErrorCallback _callback;
 
 	Directory::Directory(std::vector<File>&& files, std::vector<Directory>&& subdirectories, Path&& path, uint16_t projectOffset):
         _files(std::move(files)),

@@ -1,4 +1,7 @@
 #include "hirzel/fs/File.hpp"
+#include "hirzel/fs/Error.hpp"
+#include "hirzel/fs/ErrorType.hpp"
+#include "hirzel/fs/Path.hpp"
 
 #include <cassert>
 #include <cstdio>
@@ -22,22 +25,34 @@ namespace hirzel::fs
 
 	static std::string readFileText(const Path& filePath)
 	{
+		// TODO: close on error
 		const auto* path = filePath.text().c_str();
 		auto fd = open(path, O_RDONLY);
 
-		// if (fd == -1)
-		// 	log::fileOpenError(path);
+		if (fd == -1)
+		{
+			pushError(ErrorType::FileOpen, path);
+			return "";
+		}
 
 		struct stat sb;
 
-		// if (fstat(fd, &sb) == -1)
-		// 	log::fileStatError(path);
+		if (fstat(fd, &sb) == -1)
+		{
+			pushError(ErrorType::FileStat, path);
+			close(fd);
+			return "";
+		}
 
 		auto length = sb.st_size;
 		auto* ptr = mmap(nullptr, length, PROT_READ, MAP_SHARED, fd, 0);
 
-		// if (ptr == (void*)-1)
-		// 	log::fileReadError(path);
+		if (ptr == (void*)-1)
+		{
+			pushError(ErrorType::FileRead, path);
+			close(fd);
+			return "";
+		}
 
 		auto text = std::string((char*)ptr, length);
 
@@ -51,15 +66,21 @@ namespace hirzel::fs
 	{
 		FILE *file = fopen(filePath, "w");
 
-		// if (!file)
-		// 	log::fileOpenError(filePath);
+		if (!file)
+		{
+			pushError(ErrorType::FileWrite, filePath);
+			return;
+		}
 
 		size_t bytesWritten = fwrite(content.c_str(), sizeof(char), content.length(), file);
 
 		fclose(file);
 
-		// if (bytesWritten != content.length())
-		// 	log::fileWriteError(filePath);
+		if (bytesWritten != content.length())
+		{
+			pushError(ErrorType::FileWrite, filePath);
+			return;
+		}
 	}
 
 	File File::read(const Path& path, uint16_t projectOffset)
@@ -75,11 +96,6 @@ namespace hirzel::fs
 		auto file = File(std::move(src), directoryPath / "main.pk", projectOffset, FileType::Source);
 
 		return file;
-	}
-
-	void File::setErrorCallback(ErrorCallback&& errorCallback)
-	{
-		
 	}
 
 	void File::write()
