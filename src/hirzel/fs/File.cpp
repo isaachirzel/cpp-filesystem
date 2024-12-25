@@ -16,14 +16,12 @@
 
 namespace hirzel::fs
 {
-	File::File(std::string&& text, const Path& path, uint16_t projectOffset, FileType fileType):
-		_text(std::move(text)),
-		_path(path),
-		_projectOffset(projectOffset),
-		_type(FileType::Regular)
+	File::File(std::vector<char>&& content, const Path& path):
+		_content(std::move(content)),
+		_path(path)
 	{}
 
-	static std::string readFileText(const Path& filePath)
+	static std::vector<char> readFileContent(const Path& filePath)
 	{
 		// TODO: close on error
 		const auto* path = filePath.text().c_str();
@@ -32,7 +30,7 @@ namespace hirzel::fs
 		if (fd == -1)
 		{
 			pushError(ErrorType::FileOpen, path);
-			return "";
+			return {};
 		}
 
 		struct stat sb;
@@ -41,7 +39,7 @@ namespace hirzel::fs
 		{
 			pushError(ErrorType::FileStat, path);
 			close(fd);
-			return "";
+			return {};
 		}
 
 		auto length = sb.st_size;
@@ -51,19 +49,20 @@ namespace hirzel::fs
 		{
 			pushError(ErrorType::FileRead, path);
 			close(fd);
-			return "";
+			return {};
 		}
 
-		auto text = std::string((char*)ptr, length);
+		auto content = std::vector<char>((char*)ptr, (char*)ptr + length);
 
 		munmap(ptr, length);
 		close(fd);
 
-		return text;
+		return content;
 	}
 
-	static void writeFileText(const char *filePath, const std::string& content)
+	static void writeFileContent(const char *filePath, const std::vector<char>& content)
 	{
+		// TODO: Memory map
 		FILE *file = fopen(filePath, "w");
 
 		if (!file)
@@ -72,35 +71,28 @@ namespace hirzel::fs
 			return;
 		}
 
-		size_t bytesWritten = fwrite(content.c_str(), sizeof(char), content.length(), file);
+		size_t bytesWritten = fwrite(content.data(), sizeof(char), content.size(), file);
 
 		fclose(file);
 
-		if (bytesWritten != content.length())
+		if (bytesWritten != content.size())
 		{
 			pushError(ErrorType::FileWrite, filePath);
 			return;
 		}
 	}
 
-	File File::read(const Path& path, uint16_t projectOffset)
+	File File::read(const Path& path)
 	{
-		auto text = readFileText(path);
-		auto file = File(std::move(text), path, projectOffset, FileType::Regular);
-
-		return file;
-	}
-
-	File File::createTestMainSrcFile(const Path& directoryPath, uint16_t projectOffset, std::string&& src)
-	{
-		auto file = File(std::move(src), directoryPath / "main.pk", projectOffset, FileType::Source);
+		auto content = readFileContent(path);
+		auto file = File(std::move(content), path);
 
 		return file;
 	}
 
 	void File::write()
 	{
-		return writeFileText(_path.text().c_str(), _text);
+		return writeFileContent(_path.text().c_str(), _content);
 	}
 
 	std::string File::getRelativePath() const
@@ -111,8 +103,8 @@ namespace hirzel::fs
 
 	const char& File::operator[](size_t index) const
 	{
-		assert(index <= _text.length());
+		assert(index <= _content.size());
 		
-		return _text[index];
+		return _content[index];
 	}
 }

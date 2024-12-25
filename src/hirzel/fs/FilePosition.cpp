@@ -5,8 +5,8 @@ namespace hirzel::fs
 	FilePosition::FilePosition(const File& file):
 		_file(&file),
 		_index(0),
-		_line(0),
-		_column(0)
+		_line(1),
+		_column(1)
 	{}
 
 	FilePosition::FilePosition(const File& file, uint32_t index, uint16_t line, uint16_t column):
@@ -16,8 +16,9 @@ namespace hirzel::fs
 		_column(column)
 	{}
 
-	void FilePosition::seekEndOfLine()
+	FilePosition FilePosition::seekEndOfLine() const
 	{
+		auto result = *this;
 		const auto& file = *_file;
 		auto shouldBreak = false;
 		
@@ -28,17 +29,20 @@ namespace hirzel::fs
 			if (c == '\n')
 			{
 				shouldBreak = true;
-				_line += 1;
-				_column = 0;
+				result._line += 1;
+				result._column = 0;
 			}
 
-			_index += 1;
-			_column += 1;
+			result._index += 1;
+			result._column += 1;
 		}
+
+		return result;
 	}
 
-	void FilePosition::seekEndOfBlockComment()
+	FilePosition FilePosition::seekEndOfBlockComment() const
 	{
+		auto result = *this;
 		const auto& file = *_file;
 		auto shouldBreak = false;
 
@@ -54,36 +58,39 @@ namespace hirzel::fs
 					break;
 
 				case '\n':
-					_line += 1;
-					_column = 0;
+					result._line += 1;
+					result._column = 0;
 					break;
 			}
 			
-			_index += 1;
-			_column += 1;
+			result._index += 1;
+			result._column += 1;
 		}
+
+		return result;
 	}
 
-	void FilePosition::seekNext()
+	FilePosition FilePosition::seekNext() const
 	{
-		const auto& file = *_file;
+		auto result = *this;
+		const auto& file = *result._file;
 
-		while (_index < file.length())
+		while (result._index < file.length())
 		{
-			auto c = file[_index];
+			auto c = file[result._index];
 
 			if (c == '/')
 			{
-				switch (file[_index + 1])
+				switch (file[result._index + 1])
 				{
 					case '/': // Line comment
-						_index += 2;
-						seekEndOfLine();
+						result._index += 2;
+						result = result.seekEndOfLine();
 						continue;
 
 					case '*': // Block comment
-						_index += 2;
-						seekEndOfBlockComment();
+						result._index += 2;
+						result.seekEndOfBlockComment();
 						continue;
 
 					default:
@@ -96,13 +103,15 @@ namespace hirzel::fs
 
 			if (c == '\n')
 			{
-				_line += 1;
-				_column = 0;
+				result._line += 1;
+				result._column = 0;
 			}
 
-			_index += 1;
-			_column += 1;
+			result._index += 1;
+			result._column += 1;
 		}
+
+		return result;
 	}
 
 	char FilePosition::operator*() const

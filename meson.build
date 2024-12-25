@@ -10,6 +10,11 @@ common_sources = [
 ]
 
 test_sources = [
+	'test/hirzel/fs/Directory.test.cpp',
+	'test/hirzel/fs/File.test.cpp',
+	'test/hirzel/fs/FilePosition.test.cpp',
+	'test/hirzel/fs/FileSnippet.test.cpp',
+	'test/hirzel/fs/Path.test.cpp'
 ]
 
 fs = import('fs')

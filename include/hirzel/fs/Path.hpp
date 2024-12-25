@@ -10,7 +10,6 @@ namespace hirzel::fs
 	class Path
 	{
 		std::string _text;
-		uint16_t _projectOffset;
 		uint16_t _nameOffset;
 		uint16_t _extensionOffset;
 

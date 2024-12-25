@@ -27,7 +27,7 @@ namespace hirzel::fs
 
 			if (entry.is_regular_file())
 			{
-				auto file = File::read(entryPath, projectOffset);
+				auto file = File::read(entryPath);
 
 				files.emplace_back(std::move(file));
 
@@ -66,14 +66,6 @@ namespace hirzel::fs
 
 		return directory;
 	}	
-
-	Directory Directory::createTestSrcDirectory(const Path& projectPath)
-	{
-		auto absolutePath = projectPath / "src";
-		auto directory = Directory({}, {}, std::move(absolutePath), 0);
-		
-		return directory;
-	}
 
 	void Directory::addFile(File&& file)
 	{

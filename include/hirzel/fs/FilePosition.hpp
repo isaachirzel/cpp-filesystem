@@ -23,9 +23,9 @@ namespace hirzel::fs
 		FilePosition& operator=(FilePosition&&) = default;
 		FilePosition& operator=(const FilePosition&) = default;
 
-		void seekEndOfLine();
-		void seekEndOfBlockComment();
-		void seekNext();
+		FilePosition seekNext() const;
+		FilePosition seekEndOfLine() const;
+		FilePosition seekEndOfBlockComment() const;
 
 		char operator*() const;
 		char operator[](size_t index) const;

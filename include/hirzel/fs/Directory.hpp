@@ -27,7 +27,6 @@ namespace hirzel::fs
         Directory(const Directory&) = delete;
 
         static Directory read(const Path& path, uint16_t projectOffset = 0);
-        static Directory createTestSrcDirectory(const Path& projectPath);
 
         void addFile(File&& file);
 

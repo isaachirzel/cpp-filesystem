@@ -9,6 +9,7 @@
 
 static void filter(char* text)
 {
+	// TODO: Fix this by getting each chunk as its own and coalescing ../ and ./
 	auto o = size_t(0);
 
 	for (char* i = text, c; (c = *i); ++i)
@@ -32,14 +33,12 @@ namespace hirzel::fs
 {
 	Path::Path():
 		_text("."),
-		_projectOffset(0),
 		_nameOffset(0),
 		_extensionOffset(1)
 	{}
 
 	Path::Path(const char *text):
 		_text(text),
-		_projectOffset(0),
 		_nameOffset(0),
 		_extensionOffset(0)
 	{
@@ -70,22 +69,16 @@ namespace hirzel::fs
 	Path& Path::operator/=(const char *other)
 	{
 		_text += DIRECTORY_SEPARATOR;
-
-		auto length = _text.length();
- 
 		_text += other;
 
-		filter(&_text[length]);
+		filter(_text.data());
 
 		return *this;
 	}
 
 	std::ostream& operator<<(std::ostream& out, const Path& path)
 	{
-		const auto* data = path._text.c_str();
-		const auto* text = data + path._projectOffset;
-
-		out << text;
+		out << path._text;
 
 		return out;
 	}
