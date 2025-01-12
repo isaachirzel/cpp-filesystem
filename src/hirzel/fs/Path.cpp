@@ -1,4 +1,5 @@
 #include "hirzel/fs/Path.hpp"
+#include <cassert>
 #include <cstring>
 
 #ifdef _WIN32
@@ -7,26 +8,71 @@
 #define DIRECTORY_SEPARATOR ('/')
 #endif
 
+static void coalesce(char* text)
+{
+}
+
 static void filter(char* text)
 {
+	thread_local static char part[256];
+	thread_local static uint16_t partIndices[512];
+	auto partIndexCount = size_t(0);
+	auto textIndex = size_t(0);
+	auto isStartOfPart = true;
 	// TODO: Fix this by getting each chunk as its own and coalescing ../ and ./
-	auto o = size_t(0);
+	// This should have a static array of indices for the start of the word, no chunks
 
-	for (char* i = text, c; (c = *i); ++i)
+	for (char* iter = text, c; (c = *iter); ++iter)
 	{
-		if (c == '/')
+		if (c == DIRECTORY_SEPARATOR)
 		{
-			auto next = i[1];
+			auto next = iter[1];
 			
-			if (next == '/' || next == '\0')
+			if (next == DIRECTORY_SEPARATOR || next == '\0')
 				continue;
+
+			// TODO: Coalesce unnecessary parts
+			if (!isStartOfPart) // There is a part already there
+			{
+				auto currentPartIndex = partIndices[partIndexCount - 1];
+				auto partLength = textIndex - currentPartIndex;
+
+				assert(partLength < sizeof(part));
+				
+				// Get part text
+				strncpy(part, &text[currentPartIndex], partLength);
+				part[partLength] = '\0';
+
+				if (!strcmp(part, "."))
+				{
+
+				}
+				else if (!strcmp(part, ".."))
+				{
+				}
+
+
+			}
+
+			text[textIndex] = DIRECTORY_SEPARATOR;
+			textIndex += 1;
+			isStartOfPart = true;
+
+			continue;
 		}
 
-		text[o] = c;
-		o += 1;
+		if (isStartOfPart)
+		{
+			partIndices[partIndexCount] = textIndex;
+			partIndexCount += 1;
+			isStartOfPart = false;
+		}
+
+		text[textIndex] = c;
+		text[textIndex] += 1;
 	}
 
-	text[o] = '\0';
+	text[textIndex] = '\0';
 }
 
 namespace hirzel::fs
